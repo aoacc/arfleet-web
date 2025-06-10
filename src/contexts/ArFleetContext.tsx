@@ -413,7 +413,7 @@ export const ArFleetProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [devMode, setDevMode] = useState(false);
   const [wallet, setWallet] = useState<any | null>(null);
   const [walletSigner, setWalletSigner] = useState<WalletSigner | null>(null);
-  const [signer, setSigner] = useState<DataItemSigner | null>(null);
+  // const [signer, setSigner] = useState<DataItemSigner | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [pubKeyB64, setPubKeyB64] = useState<string | null>(null);
   const [pubKey, setPubKey] = useState<ArrayBuffer | null>(null);
@@ -623,8 +623,10 @@ export const ArFleetProvider: React.FC<{ children: React.ReactNode }> = ({ child
     console.log("ArFleetProvider: connectWallet called");
     if (globalThis.arweaveWallet) {
       const wallet_ = globalThis.arweaveWallet;
+      console.log("wallet_", wallet_);
       let signer_ = createDataItemSigner(wallet_);
-      setSigner(signer_);
+      console.log("signer_", signer_);
+      // setSigner(signer_);
       setWallet(wallet_);
       console.log("wallet", wallet_);
       console.log("signMessage", wallet_.signMessage);
@@ -1442,7 +1444,7 @@ export const ArFleetProvider: React.FC<{ children: React.ReactNode }> = ({ child
     processPlacementQueue,
     address,
     wallet,
-    signer,
+    // signer,
     arConnected,
     masterKey,
     connectWallet,

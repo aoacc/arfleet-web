@@ -238,7 +238,7 @@ export class DataItem extends Sliceable {
       let tags_start = anchor_start + 1;
       bytes[anchor_start] = this.anchor ? 1 : 0;
       if (this.anchor) {
-        if (_anchor === null || _anchor.byteLength !== 32) throw new Error('Anchor must be 32 bytes');
+        if (_anchor === null || _anchor.byteLength !== 32) throw new Error('Anchor must be 32 bytes!!!');
         tags_start += _anchor.byteLength;
         bytes.set(_anchor, anchor_start + 1);
       }

@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { bufferTob64Url, stringToB64Url } from '@/helpers/encodeUtils';
+import { b64UrlToBuffer, b64UrlToString, bufferTob64, bufferTob64Url, stringToB64Url } from '@/helpers/encodeUtils';
 import { encKeyFromMasterKeyAndSalt } from '@/helpers/encrypt';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { bufferToAscii } from '@/helpers/buf';
 import { downloadUint8ArrayAsFile } from '@/helpers/extra';
-import { DataItem } from "warp-arbundles";
+import { DataItem } from "@dha-team/arbundles";
 import { ARFLEET_VERSION } from '@/helpers/version';
 import mime from 'mime';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -260,30 +260,39 @@ export default function FileContentViewer() {
       // Determine the Content-Type using mime-types
       const contentType = mime.getType(uploadingFileName || '') || 'application/octet-stream';
 
+      // Create a random 32-character string
+
+const tosign = {
+  data: dataItemContents,
+  tags: [
+    {name: "ArFleet-Client", value: "Web"},
+    {name: "ArFleet-Version", value: ARFLEET_VERSION},
+    {
+      name: "ArFleet-DataItem-Type",
+      value: (dataItemType === 'encrypted') ? "aes" : "file"
+    },
+    {
+      name: "ArFleet-DataItem-Path",
+      value: immortalizeItem?.file?.path
+    },
+    {
+      name: "name",
+      value: uploadingFileName
+    },
+    {
+      name: "Content-Type",
+      value: contentType
+    }
+],
+anchor: "0"
+
+};
+console.log('tosign', tosign);
+      
       // Sign the data item with the correct Content-Type
-      const signed = await wallet.signDataItem({
-        data: dataItemContents,
-        tags: [
-          {name: "ArFleet-Client", value: "Web"},
-          {name: "ArFleet-Version", value: ARFLEET_VERSION},
-          {
-            name: "ArFleet-DataItem-Type",
-            value: (dataItemType === 'encrypted') ? "aes" : "file"
-          },
-          {
-            name: "ArFleet-DataItem-Path",
-            value: immortalizeItem?.file?.path
-          },
-          {
-            name: "name",
-            value: uploadingFileName
-          },
-          {
-            name: "Content-Type",
-            value: contentType
-          }
-      ]
-      });
+      const signed = await wallet.signDataItem(tosign);
+
+      console.log('signed', signed);
 
 
       ////////
@@ -294,9 +303,13 @@ export default function FileContentViewer() {
 
       // load the result into a DataItem instance
       const signedDataItem = new DataItem(signed);
-
+      
       console.log('signedDataItem', signedDataItem);
 
+      // Add this code to output hex
+      const rawBytes = new Uint8Array(signedDataItem.getRaw());  // Convert Buffer to Uint8Array
+      console.log('Data Item Hex:', Array.from(rawBytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+      
       const result = await fetch(`https://up.arweave.net/tx/arweave`, {
         method: 'POST',
         headers: {
@@ -340,6 +353,7 @@ export default function FileContentViewer() {
   
     } catch (error) {
       console.error('Error immortalizing file:', error);
+      throw error;
       // You might want to show an error message to the user here
     } finally {
       setIsImmortalizing(false);

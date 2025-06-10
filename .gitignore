@@ -26,3 +26,6 @@ dist-ssr
 /wasm/target/
 **/*.rs.bk
 Cargo.lock
+
+wallet.json
+src/test-dataitem.ts

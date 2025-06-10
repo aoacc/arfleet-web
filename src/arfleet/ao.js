@@ -7,8 +7,9 @@ import axios from 'axios';
 
 const connection = connect(config.aoConfig);
 
-const MAX_ATTEMPTS = 200;
-const RETRY_DELAY_MS = 200; // ms delay between retries
+const MAX_ATTEMPTS = 20;
+const INITIAL_RETRY_DELAY_MS = 500; // ms delay between retries
+const MAX_RETRY_DELAY_MS = 10000; // 10 seconds
 
 class AOClient {
     constructor({ wallet }) {
@@ -30,7 +31,8 @@ class AOClient {
                 throw e;
             } else {
                 console.log(`Retrying getResult... Attempt ${attempt + 1} of ${MAX_ATTEMPTS}`);
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt), MAX_RETRY_DELAY_MS);
+                await new Promise(resolve => setTimeout(resolve, delay));
                 return this.getResult(process_id, message, attempt + 1);
             }
         }
@@ -108,7 +110,8 @@ class AOClient {
             } else {
                 console.error(e);
                 console.log(`Retrying sendAction... Attempt ${attempt + 1} of ${MAX_ATTEMPTS}`);
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt), MAX_RETRY_DELAY_MS);
+                await new Promise(resolve => setTimeout(resolve, delay));
                 return this.sendAction(process_id, action, data, tags, attempt + 1);
             }
         }
@@ -186,9 +189,7 @@ class AOClient {
                 headers: {
                     "accept": "*/*",
                     "accept-language": "en-US,en;q=0.9,ru;q=0.8",
-                    "content-type": "application/json",
-                    "priority": "u=1, i",
-                    "Referrer-Policy": "strict-origin-when-cross-origin"
+                    "content-type": "application/json"
                 }
             });
 
@@ -196,7 +197,8 @@ class AOClient {
             return returned;
         } catch (e) {
             console.error(`Error in dry run, retrying... Attempt ${attempt + 1} of ${MAX_ATTEMPTS}`, e);
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt), MAX_RETRY_DELAY_MS);
+            await new Promise(resolve => setTimeout(resolve, delay));
             return this.dryRun(process_id, action, data, tags, attempt + 1);
         }
     }

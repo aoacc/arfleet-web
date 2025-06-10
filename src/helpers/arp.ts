@@ -1,12 +1,11 @@
 import { Placement } from "@/contexts/ArFleetContext";
-import { bufferToAscii, bufferToHex, bufferToString, byteArrayToLong, hexToBuffer, intTo4ByteArray, longTo8ByteArray } from "./buf";
+import { bufferToAscii, bufferToHex, bufferToString, byteArrayToLong, hexToBuffer, longTo8ByteArray } from "./buf";
 import { DataItem } from "./dataitemmod";
 import { b64UrlToBuffer, bufferTob64Url, stringToBuffer } from "./encodeUtils";
 import { sha256hex } from "./hash";
 import { PLACEMENT_BLOB_CHUNK_SIZE } from "./placementBlob";
 import { RSA_ENCRYPTED_CHUNK_SIZE, RSA_UNDERLYING_CHUNK_SIZE } from "./rsa";
 import { Sliceable, SliceableReader, SliceParts } from "./sliceable";
-import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 const ARP_VERSION = 1;
 

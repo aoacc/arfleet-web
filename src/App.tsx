@@ -101,7 +101,7 @@ function App() {
   )
 }
 
-function Header({ theme }) {
+function Header({ theme }: { theme: string }) {
   const { arConnected, devMode, resetAODB } = useArFleet();
 
   console.log({arConnected, devMode})
@@ -406,7 +406,7 @@ function CheckingPassUI() {
   );
 }
 
-function PassNotFoundUI({ address }) {
+function PassNotFoundUI({ address }: { address: string }) {
   return (
     <Dialog open={true}>
       <DialogContent className="sm:max-w-[425px]">
@@ -536,7 +536,7 @@ function LoadingUI() {
   );
 }
 
-function Sidebar({ activeLink, links }) {
+function Sidebar({ activeLink, links }: { activeLink: string, links: LinkItem[] }) {
   return (
     <div className="hidden border-r bg-muted/40 md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
@@ -567,6 +567,15 @@ function Sidebar({ activeLink, links }) {
           </nav>
         </div>
         <div className="mt-auto p-4">
+
+          <Card className="mb-4">
+            <CardHeader className="p-2 pt-0 md:p-4">
+              <CardTitle>Multiple Requests to Sign</CardTitle>
+              <CardDescription>
+                Due to recent updates to Wander wallet, you may be prompted to sign multiple transactions. Please be patient and confirm all requests.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
           <Card>
             <CardHeader className="p-2 pt-0 md:p-4">

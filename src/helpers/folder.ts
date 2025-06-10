@@ -107,7 +107,13 @@ export class Folder extends Sliceable {
 
     async addArp(file: FileMetadata | DataItem, byteLength: number, fileChunkStart: number) {
         let arp = new Arp(ArpType.ARP_RAW_DATA, byteLength, (async (cs: number, hashIdx: number) => {
-            const [file_, chunkIdx] = this.chunkIdxToFile.get(cs + hashIdx)!;
+            console.log('[DEBUG] RAW_DATA callback', { cs, hashIdx, key: cs + hashIdx, chunks: this.chunkIdxToFile.size });
+            const val = this.chunkIdxToFile.get(cs + hashIdx);
+            if (!val) {
+                console.error('[DEBUG] Key not found in chunkIdxToFile for RAW_DATA');
+                console.log('[DEBUG] chunkIdxToFile keys', Array.from(this.chunkIdxToFile.keys()));
+            }
+            const [file_, chunkIdx] = val!;
             const hash = file_.chunkHashes[chunkIdx];
             // console.log('arp file', {file_, file, chunkIdx, hash, cs, hashIdx, chunkIdxToFile: this.chunkIdxToFile});
             if (!hash) {
@@ -134,7 +140,13 @@ export class Folder extends Sliceable {
 
         while(arpByteLength > FOLDER_FILE_BOUNDARY) {
             arp = new Arp(ArpType.ARP_NESTED, arpByteLength, (async (cs: number, hashIdx: number) => {
-                const [a, chunkIdx] = this.chunkIdxToFile.get(cs + hashIdx)!;
+                console.log('[DEBUG] NESTED callback', { cs, hashIdx, key: cs + hashIdx, chunks: this.chunkIdxToFile.size });
+                const val = this.chunkIdxToFile.get(cs + hashIdx);
+                if (!val) {
+                    console.error('[DEBUG] Key not found in chunkIdxToFile for NESTED');
+                    console.log('[DEBUG] chunkIdxToFile keys', Array.from(this.chunkIdxToFile.keys()));
+                }
+                const [a, chunkIdx] = val!;
                 // console.log('a', a, a.chunkHashes);
                 const chunkHash = a.chunkHashes[chunkIdx];
                 if (!chunkHash) throw new Error('Chunk hash is not set, asking for hash of nested arp:' + a + ' ' + chunkIdx);
