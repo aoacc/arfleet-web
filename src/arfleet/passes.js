@@ -4,7 +4,6 @@ import config from './config';
 // const { getAoInstance } = require('./ao');
 // const { color } = require('../utils/color');
 import { MINUTE } from './constants';
-import axios from 'axios';
 import { getAoInstance } from './ao';
 
 function color(x) {
@@ -36,7 +35,7 @@ const checkPasses = async(firstTime = false, ourAddress = null) => {
         if (firstTime) {
             console.log(Object.keys(passes).length.toString() + " ArFleet:Genesis passes found");
             if (ourAddress) {
-                if (hasPass(ourAddress)) {
+                if (await hasPass(ourAddress)) {
                     console.log(color("✅ You have an ArFleet:Genesis pass! 🎉", "green"));
                 } else {
                     console.log("");
@@ -57,25 +56,93 @@ const checkPasses = async(firstTime = false, ourAddress = null) => {
     }
 }
 
-const hasPass = (address) => {
-    hasPassLive(address);
-    return passes && passes[address] && passes[address] > 0;
+const getBazarProfiles = async (ownerAddress) => {
+    const ao = getAoInstance();
+    const query = `query {
+        transactions(
+            tags: [{name: "Data-Protocol", values: ["Permaweb-Zone"]}, {name: "Zone-Type", values: ["User"]}],
+            owners: ["${ownerAddress}"],
+            first: 100
+        ) {
+            edges {
+                node {
+                    id
+                }
+            }
+        }
+    }`;
+
+    try {
+        console.log(`Searching for bazar profiles for ${ownerAddress}`);
+        const response = await ao.graphQL(query);
+
+        if (response.data.transactions) {
+            const edges = response.data.transactions.edges;
+            if (edges && edges.length > 0) {
+                const profiles = edges.map(edge => edge.node.id);
+                console.log(`Found profiles: ${profiles.join(', ')}`);
+                return profiles;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to fetch bazar profiles", e.message);
+    }
+    return [];
+}
+
+const checkAddressForPass = async (address) => {
+    const ao = getAoInstance();
+    console.log(`Checking for pass on address: ${address}`);
+    const passAddress = config.passes.address;
+    
+    try {
+        const result = await ao.dryRun(passAddress, "Balance", JSON.stringify({
+            "Target": address,
+        }));
+        
+        // console.log('PASS CHECK', {address, result});
+        const balance = result;
+
+        if (typeof balance === 'number' && balance > 0) {
+            console.log(`Pass found on ${address}`);
+            return true;
+        }
+    } catch (e) {
+        if (e.message.includes("Target does not have a balance")) {
+            // This is an expected error when no pass is held, so we can ignore it.
+        } else if (e.message.includes("No data returned from dry run")) {
+            // This is also an expected error when no pass is held.
+        }
+        else {
+            console.error(`Error checking pass for ${address}:`, e.message);
+        }
+    }
+    return false;
+}
+
+const hasPass = async (address) => {
+    const fromCache = passes && passes[address] && passes[address] > 0;
+    if(fromCache) return true;
+
+    return await hasPassLive(address);
 }
 
 const hasPassLive = async (address) => {
-    console.log("Checking passes live...");
-    const passAddress = config.passes.address;
-    
-    const ao = getAoInstance();
-    const balance = await ao.dryRun(passAddress, "Balance", JSON.stringify({
-        "Target": address,
-    }));
+    console.log("Checking passes live for address:", address);
 
-    if (typeof balance === 'number' && balance > 0) {
+    if (await checkAddressForPass(address)) {
         return true;
-    } else {
-        return false;
     }
+
+    console.log("Pass not found in wallet, checking Bazar profiles...");
+    const profileAddresses = await getBazarProfiles(address);
+    for (const profileAddress of profileAddresses) {
+        if (await checkAddressForPass(profileAddress)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 const startChecking = async(ourAddress = null) => {

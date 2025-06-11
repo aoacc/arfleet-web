@@ -159,7 +159,7 @@ class AOClient {
         }
     }
 
-    async dryRun(process_id, action, data = "{}", tags = {}, attempt = 0) {
+    async dryRun(process_id, action, data = "{}", tags = {}, attempt = 0, errorHandler = null) {
         try {
             if (attempt > MAX_ATTEMPTS) {
                 throw new Error("Max retry attempts reached for dry run");
@@ -193,9 +193,20 @@ class AOClient {
                 }
             });
 
+            if (!response.data.Messages || !response.data.Messages[0].Data) {
+                throw new Error("No data returned from dry run: " + JSON.stringify(response.data));
+            }
+
             const returned = JSON.parse(response.data.Messages[0].Data);
             return returned;
         } catch (e) {
+            if (errorHandler) {
+                const handled = errorHandler(e);
+                if (handled !== false && handled !== null) {
+                    return handled;
+                }
+            }
+
             console.error(`Error in dry run, retrying... Attempt ${attempt + 1} of ${MAX_ATTEMPTS}`, e);
             const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt), MAX_RETRY_DELAY_MS);
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -235,6 +246,15 @@ class AOClient {
         const res = await this.spawn(source);
         console.log('spawned AODB', { res });
         return res;
+    }
+
+    async graphQL(query) {
+        const response = await axios.post('https://arweave-search.goldsky.com/graphql', {
+            query: query
+        }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response.data;
     }
 }
 
